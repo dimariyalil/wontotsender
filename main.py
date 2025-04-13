@@ -1,5 +1,5 @@
-
 import os
+import json
 import time
 from datetime import datetime
 from telethon.sync import TelegramClient
@@ -17,11 +17,15 @@ sleep_sec = 65
 # Google Sheets settings
 spreadsheet_id = '13WJZwc0fGYqrzDq3XYYu_IFEooX81LVaW6oI5LdvTxE'
 sheet_name = 'Sheet1'
-json_keyfile = 'wontotsender-62f0d9912f01.json'
 
-# === AUTH ===
+# === LOAD GOOGLE CREDENTIALS FROM RAILWAY VARIABLE ===
+raw_creds = os.getenv("GOOGLE_CREDENTIALS")
+if not raw_creds:
+    raise Exception("Переменная GOOGLE_CREDENTIALS не установлена в Railway")
+
+parsed_creds = json.loads(raw_creds)
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-credentials = Credentials.from_service_account_file(json_keyfile, scopes=scopes)
+credentials = Credentials.from_service_account_info(parsed_creds, scopes=scopes)
 gc = gspread.authorize(credentials)
 sh = gc.open_by_key(spreadsheet_id)
 sheet = sh.worksheet(sheet_name)
@@ -46,7 +50,6 @@ https://youtu.be/E6cRFd6EdgU?si=xs7oHNvu5igkXaaY
 Лендинг проекта:
 https://tg-football-cup-1-xdocvmc.gamma.site"""
 
-
 def get_archived_usernames():
     try:
         records = sheet.get_all_records()
@@ -55,7 +58,6 @@ def get_archived_usernames():
         print(f"[ERROR] Ошибка при чтении архива из Google Sheets: {str(e)}")
         return set()
 
-
 def update_archive(username, status="success"):
     try:
         sheet.append_row([username, status, datetime.now().isoformat()])
@@ -63,14 +65,12 @@ def update_archive(username, status="success"):
     except Exception as e:
         print(f"[ARCHIVE ❌] Ошибка добавления {username}: {str(e)}")
 
-
 def load_usernames(filename="usernames.txt"):
     if not os.path.exists(filename):
         print("[ERROR] Нет файла usernames.txt")
         return []
     with open(filename, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip().startswith("@")]
-
 
 async def main():
     usernames = load_usernames()
