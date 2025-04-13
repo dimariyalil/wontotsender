@@ -18,7 +18,7 @@ sleep_sec = 65
 spreadsheet_id = '13WJZwc0fGYqrzDq3XYYu_IFEooX81LVaW6oI5LdvTxE'
 sheet_name = 'Sheet1'
 
-# === LOAD GOOGLE CREDENTIALS FROM RAILWAY VARIABLE ===
+# === LOAD GOOGLE CREDENTIALS FROM ENV VARIABLE ===
 raw_creds = os.getenv("GOOGLE_CREDENTIALS")
 if not raw_creds:
     raise Exception("Переменная GOOGLE_CREDENTIALS не установлена в Railway")
@@ -53,7 +53,10 @@ https://tg-football-cup-1-xdocvmc.gamma.site"""
 def get_archived_usernames():
     try:
         records = sheet.get_all_records()
-        return set(str(row['username']).strip() for row in records if row['username'])
+        return set(
+            str(row['username']).strip().lstrip('@').lower()
+            for row in records if row['username']
+        )
     except Exception as e:
         print(f"[ERROR] Ошибка при чтении архива из Google Sheets: {str(e)}")
         return set()
@@ -77,8 +80,10 @@ async def main():
     archive = get_archived_usernames()
 
     for username in usernames:
-        if username in archive:
-            print(f"[SKIP] Уже в архиве (Google Sheets): {username}")
+        username_clean = username.strip().lstrip('@').lower()
+
+        if username_clean in archive:
+            print(f"[SKIP] Уже в архиве (Google Sheets): {username_clean}")
             continue
 
         update_archive(username)
